@@ -1,0 +1,30 @@
+# Python
+__pycache__/
+*.pyc
+
+# Conda / mamba envs
+.env/
+*.yml.lock
+
+# Data
+*.hic
+*.mcool
+*.cool
+*.bam
+*.bw
+*.bigwig
+*.bed
+*.pairs*
+*.pt
+*.npy
+*.csv
+*.png
+
+# Jupyter and logs
+*.ipynb_checkpoints/
+*.log
+.DS_Store
+
+# Results / temp
+results/
+data/
