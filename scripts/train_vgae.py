@@ -1,13 +1,9 @@
 #!/usr/bin/env python3
 """
 Train a Variational Graph Autoencoder (VGAE) on a chromatin contact graph.
-
+---  
 Inputs:
-  - A PyTorch Geometric Data object saved with torch.save(...) containing:
-        x            : [num_nodes, num_features] node features
-        edge_index   : [2, num_edges] undirected edges (will be coalesced)
-        edge_weight  : [num_edges]   (optional, unused by VGAE)
-
+  - A PyTorch Geometric Data object saved with torch.save() 
   - from build_graph.py
 ---        
 Outputs (under results/):
@@ -80,14 +76,14 @@ def main():
     np.random.seed(args.seed)
     os.makedirs(args.outdir, exist_ok=True)
 
-    # ---- Load graph ----
+    # Load graph
     data = torch.load(args.graph)
     # Coalesce/clean edges
     ei, _ = remove_self_loops(data.edge_index)
     data.edge_index = to_undirected(ei, num_nodes=data.num_nodes)
     x = data.x.float()
 
-    # ---- Split edges for link prediction ----
+    # Split edges for link prediction
     splitter = RandomLinkSplit(
         num_val=0.1,
         num_test=0.1,
@@ -112,12 +108,12 @@ def main():
         )
 
 
-    # ---- Model ----
+    # Model
     enc = Encoder(in_dim=x.size(1), hidden=args.hidden, latent=args.latent, dropout=args.dropout)
     model = VGAE(enc)
     optimizer = torch.optim.Adam(model.parameters(), lr=args.lr)
 
-    # ---- Training loop ----
+    # Training loop
     best_val_auc = -1.0
     best_state = None
     for epoch in range(1, args.epochs + 1):
@@ -133,7 +129,7 @@ def main():
         loss.backward()
         optimizer.step()
 
-        # ---- Validation ----
+        # Validation
         model.eval()
         with torch.no_grad():
             z_full = model.encode(x, data.edge_index)  # use full graph for eval embeddings
@@ -146,18 +142,18 @@ def main():
         if epoch % 10 == 0 or epoch == 1:
             print(f"[{epoch:03d}/{args.epochs}] loss={loss.item():.4f} | val AUC={val_auc:.4f} AP={val_ap:.4f}")
 
-    # ---- Save best model ----
+    # Save best model
     model.load_state_dict(best_state)
     model_path = os.path.join(args.outdir, "model.pt")
     torch.save(model.state_dict(), model_path)
 
-    # ---- Final test metrics ----
+    # Final test metrics
     model.eval()
     with torch.no_grad():
         z_final = model.encode(x, data.edge_index)
         test_auc, test_ap = eval_linkpred(model, test_data, z_final)
 
-    # ---- Save embeddings & metrics ----
+    # Save embeddings & metrics
     emb_path = os.path.join(args.outdir, "emb.npy")
     np.save(emb_path, z_final.cpu().numpy())
 
